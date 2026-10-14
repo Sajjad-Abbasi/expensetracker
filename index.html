@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#09517e',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- SPLASH SCREEN -->
+    <div id="splashScreen" class="fixed inset-0 z-50 bg-slate-900 flex flex-col items-center justify-center text-white transition-opacity duration-500">
+        <div class="relative flex items-center justify-center mb-4">
+            <div class="w-20 h-20 bg-brand-500/20 rounded-2xl absolute animate-ping"></div>
+            <div class="w-20 h-20 bg-gradient-to-tr from-brand-600 to-teal-400 rounded-2xl flex items-center justify-center shadow-lg shadow-brand-500/30 relative z-10">
+                <i class="fa-solid fa-wallet text-3xl text-white"></i>
+            </div>
+        </div>
+        <h1 class="text-2xl font-bold tracking-tight">Expense Tracker</h1>
+        <p class="text-slate-400 text-xs mt-1 font-medium">Daily & Home Expense Manager</p>
+    </div>
+
+    <!-- MAIN WRAPPER -->
+    <div id="appContent" class="hidden min-h-screen flex flex-col max-w-md mx-auto w-full bg-white shadow-xl min-h-screen relative pb-20">
+        
+        <!-- HEADER -->
+        <header class="bg-slate-900 text-white p-4 sticky top-0 z-30 shadow-md">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-tr from-brand-600 to-teal-400 rounded-xl flex items-center justify-center shadow-md">
+                        <i class="fa-solid fa-wallet text-lg text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-base leading-tight">Expense Tracker</h1>
+                        <p id="userEmailBadge" class="text-[11px] text-slate-400 truncate max-w-[170px]">Not Logged In</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="authBtn" onclick="openAuthModal()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-right-to-bracket text-xs"></i>
+                        <span id="authBtnText">Login</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- DASHBOARD CONTAINER -->
+        <main class="p-4 space-y-5 flex-1">
+
+            <!-- STATS OVERVIEW CARDS -->
+            <section class="grid grid-cols-3 gap-2.5">
+                <!-- Total Budget / Balance Card -->
+                <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-3 rounded-2xl shadow-sm border border-slate-700 flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-slate-400 mb-1">
+                        <span class="text-[10px] font-semibold uppercase tracking-wider">Total Balance</span>
+                        <i class="fa-solid fa-scale-balanced text-xs text-brand-500"></i>
+                    </div>
+                    <div>
+                        <span id="totalBalanceDisplay" class="text-base font-bold text-emerald-400">Rs. 0</span>
+                        <p class="text-[9px] text-slate-400 mt-0.5">Remaining Budget</p>
+                    </div>
+                    <button onclick="openBudgetModal()" class="mt-2 text-[10px] text-brand-100 hover:underline flex items-center gap-1">
+                        <i class="fa-solid fa-pen-to-square"></i> Set Limit
+                    </button>
+                </div>
+
+                <!-- Total Spent Card -->
+                <div class="bg-rose-50 border border-rose-100 p-3 rounded-2xl shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-rose-500 mb-1">
+                        <span class="text-[10px] font-semibold uppercase tracking-wider">Kharch Balance</span>
+                        <i class="fa-solid fa-arrow-down-left text-xs"></i>
+                    </div>
+                    <div>
+                        <span id="totalSpentDisplay" class="text-base font-bold text-rose-600">Rs. 0</span>
+                        <p class="text-[9px] text-rose-400 mt-0.5">Overall Expenses</p>
+                    </div>
+                </div>
+
+                <!-- Monthly Spent Card -->
+                <div class="bg-sky-50 border border-sky-100 p-3 rounded-2xl shadow-sm flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-sky-600 mb-1">
+                        <span class="text-[10px] font-semibold uppercase tracking-wider">Monthly Pay</span>
+                        <i class="fa-solid fa-calendar-day text-xs"></i>
+                    </div>
+                    <div>
+                        <span id="monthlySpentDisplay" class="text-base font-bold text-sky-700">Rs. 0</span>
+                        <p id="currentMonthLabel" class="text-[9px] text-sky-500 mt-0.5">This Month</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CATEGORY SUMMARY BARS / SECTIONS -->
+            <section class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-layer-group text-brand-600"></i>
+                        Category Breakdown (Monthly Record)
+                    </h2>
+                    <select id="monthFilter" onchange="renderApp()" class="text-xs bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-600 font-medium">
+                        <!-- Dynamic Month Options -->
+                    </select>
+                </div>
+
+                <!-- CATEGORIES CARDS CONTAINER -->
+                <div id="categoryCardsGrid" class="grid grid-cols-2 gap-2.5">
+                    <!-- Dynamic rendering of categories -->
+                </div>
+            </section>
+
+            <!-- RECENT EXPENSES LIST -->
+            <section class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-receipt text-brand-600"></i>
+                        All Transactions
+                    </h2>
+                    <span id="expenseCountBadge" class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">0 items</span>
+                </div>
+
+                <div id="expensesList" class="space-y-2">
+                    <!-- Dynamic expenses list -->
+                </div>
+            </section>
+
+        </main>
+
+        <!-- FLOATING ADD BUTTON -->
+        <div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-30 max-w-md w-full px-4 flex justify-end">
+            <button onclick="openAddExpenseModal()" class="bg-gradient-to-r from-brand-600 to-teal-500 hover:from-brand-700 hover:to-teal-600 text-white font-semibold text-sm py-3 px-5 rounded-full shadow-lg shadow-brand-500/30 flex items-center gap-2 transition active:scale-95">
+                <i class="fa-solid fa-plus text-base"></i>
+                <span>Add Expense</span>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- ADD EXPENSE FORM MODAL -->
+    <div id="expenseModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden animate-fade-in">
+        <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b pb-3 border-slate-100">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-cart-plus text-brand-600"></i>
+                    Add New Expense
+                </h3>
+                <button onclick="closeExpenseModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center bg-slate-100">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <form id="addExpenseForm" onsubmit="handleSaveExpense(event)" class="space-y-3">
+                <!-- 1. What I buy? -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">What did you buy? (Item Name) *</label>
+                    <input type="text" id="itemName" required placeholder="e.g. Tomatoes, Milk, Internet Bill" 
+                        class="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50">
+                </div>
+
+                <!-- 2. Price -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Price (Amount in Rs.) *</label>
+                    <input type="number" step="any" id="itemPrice" required placeholder="0.00" 
+                        class="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50 font-semibold text-slate-800">
+                </div>
+
+                <!-- 3. Category Type -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Category Type *</label>
+                    <select id="itemCategory" required class="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50 text-slate-700">
+                        <option value="Vegetables">🥕 Vegetables</option>
+                        <option value="Fruits">🍎 Fruits</option>
+                        <option value="Groceries">🛒 Groceries & Ration</option>
+                        <option value="Utilities & Bills">💡 Utilities & Bills</option>
+                        <option value="Transport & Fuel">🚗 Transport & Fuel</option>
+                        <option value="Entertainment">🎬 Entertainment / Outing</option>
+                        <option value="Personal">👕 Personal & Shopping</option>
+                        <option value="Others">📦 Others</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <!-- 4. Date -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Date *</label>
+                        <input type="date" id="itemDate" required class="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50">
+                    </div>
+
+                    <!-- 5. Payment Method -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Payment Method *</label>
+                        <select id="itemPaymentMethod" required class="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50">
+                            <option value="Cash">💵 Cash</option>
+                            <option value="Online">💳 Online / Card</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 6. Note -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Note / Remarks (Optional)</label>
+                    <input type="text" id="itemNote" placeholder="e.g. Purchased from Sunday Market" 
+                        class="w-full text-xs px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-slate-50/50">
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button type="button" onclick="closeExpenseModal()" class="w-1/3 text-xs py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50">Cancel</button>
+                    <button type="submit" id="saveBtn" class="w-2/3 text-xs py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold shadow-md shadow-brand-500/20 flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-check"></i> Save Record
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- BUDGET SETTING MODAL -->
+    <div id="budgetModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-xs rounded-2xl p-5 shadow-2xl space-y-4">
+            <h3 class="text-sm font-bold text-slate-800">Set Monthly Budget Limit</h3>
+            <div>
+                <label class="block text-xs text-slate-500 mb-1">Total Monthly Budget (Rs.)</label>
+                <input type="number" id="budgetInput" placeholder="e.g. 50000" class="w-full text-sm p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+            <div class="flex gap-2">
+                <button onclick="closeBudgetModal()" class="w-1/2 text-xs py-2 rounded-xl border border-slate-200 text-slate-600 font-medium">Cancel</button>
+                <button onclick="saveBudgetLimit()" class="w-1/2 text-xs py-2 rounded-xl bg-brand-600 text-white font-medium">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUTHENTICATION MODAL -->
+    <div id="authModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 id="authTitle" class="text-sm font-bold text-slate-800">Login to Sync Firebase</h3>
+                <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <div id="authAlert" class="hidden text-xs p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600"></div>
+
+            <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Email Address</label>
+                    <input type="email" id="authEmail" required placeholder="user@example.com" class="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
+                    <input type="password" id="authPassword" required minlength="6" placeholder="******" class="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" id="authSubmitBtn" class="w-full text-xs py-2.5 rounded-xl bg-brand-600 text-white font-semibold shadow-sm">
+                        Sign In
+                    </button>
+                </div>
+            </form>
+
+            <div class="text-center text-xs text-slate-500 pt-1">
+                <span id="authToggleText">Don't have an account?</span>
+                <button onclick="toggleAuthMode()" id="authToggleBtn" class="text-brand-600 font-semibold underline ml-1">Register</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM NOTIFICATION CONTAINER -->
+    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMsg">Operation successful</span>
+    </div>
+
+    <!-- FIREBASE MODULE & APPLICATION LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged,
+            signInAnonymously,
+            signInWithCustomToken
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            deleteDoc, 
+            doc, 
+            onSnapshot, 
+            setDoc, 
+            getDoc 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase Configuration fallback or environmental variables
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : {
+                apiKey: "AIzaSyDemoPlaceholderOnlyForFrontendRender",
+                authDomain: "demo-app.firebaseapp.com",
+                projectId: "demo-app",
+                storageBucket: "demo-app.appspot.com",
+                messagingSenderId: "123456789",
+                appId: "1:123456789:web:demo"
+            };
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'expense-tracker-app';
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // App State
+        let currentUser = null;
+        let isAuthModeLogin = true;
+        let expensesList = [];
+        let categoryBudgets = { limit: 50000 };
+        let unsubscribeExpenses = null;
+        let selectedCategoryFilter = 'All';
+
+        const CATEGORIES = [
+            { name: "Vegetables", icon: "fa-carrot", color: "text-amber-600 bg-amber-50 border-amber-200" },
+            { name: "Fruits", icon: "fa-apple-whole", color: "text-rose-600 bg-rose-50 border-rose-200" },
+            { name: "Groceries", icon: "fa-basket-shopping", color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
+            { name: "Utilities & Bills", icon: "fa-lightbulb", color: "text-yellow-600 bg-yellow-50 border-yellow-200" },
+            { name: "Transport & Fuel", icon: "fa-car", color: "text-blue-600 bg-blue-50 border-blue-200" },
+            { name: "Entertainment", icon: "fa-film", color: "text-purple-600 bg-purple-50 border-purple-200" },
+            { name: "Personal", icon: "fa-shirt", color: "text-indigo-600 bg-indigo-50 border-indigo-200" },
+            { name: "Others", icon: "fa-box", color: "text-slate-600 bg-slate-100 border-slate-200" }
+        ];
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Set today's default date in Form
+            const dateInput = document.getElementById('itemDate');
+            if (dateInput) {
+                dateInput.value = new Date().toISOString().split('T')[0];
+            }
+
+            populateMonthOptions();
+
+            // Splash timeout
+            setTimeout(() => {
+                const splash = document.getElementById('splashScreen');
+                const appContent = document.getElementById('appContent');
+                splash.classList.add('opacity-0');
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                    appContent.classList.remove('hidden');
+                }, 500);
+            }, 1200);
+
+            // Auth State Listener
+            onAuthStateChanged(auth, async (user) => {
+                currentUser = user;
+                updateAuthUI();
+
+                if (user) {
+                    subscribeToFirestoreData(user.uid);
+                } else {
+                    // Fallback to anonymous sign-in or initial token if provided
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (e) {
+                        console.log("Anonymous Auth Notice:", e.message);
+                        // Render with empty local fallback if unauthenticated
+                        renderApp();
+                    }
+                }
+            });
+        });
+
+        // Firestore Realtime Subscription (RULE 1 & RULE 2 Compliant)
+        function subscribeToFirestoreData(uid) {
+            if (unsubscribeExpenses) unsubscribeExpenses();
+
+            // PUBLIC USER EXPENSE COLLECTION PATH
+            const expensesRef = collection(db, 'artifacts', appId, 'users', uid, 'expenses');
+
+            // Simple collection fetch without complex compound query (RULE 2)
+            unsubscribeExpenses = onSnapshot(expensesRef, (snapshot) => {
+                expensesList = [];
+                snapshot.forEach((docSnap) => {
+                    expensesList.push({ id: docSnap.id, ...docSnap.data() });
+                });
+
+                // Sort in JavaScript memory by date descending
+                expensesList.sort((a, b) => new Date(b.date) - new Date(a.date));
+                renderApp();
+            }, (error) => {
+                console.error("Firestore Listen Error:", error);
+                showToast("Data sync error", true);
+            });
+        }
+
+        // Render UI
+        window.renderApp = function() {
+            const selectedMonth = document.getElementById('monthFilter').value;
+            
+            // Filter expenses by selected month (YYYY-MM format)
+            const filteredExpenses = expensesList.filter(exp => {
+                if (!exp.date) return true;
+                const expMonth = exp.date.substring(0, 7);
+                return selectedMonth === 'ALL' || expMonth === selectedMonth;
+            });
+
+            // Total spent overall & monthly
+            const totalSpent = expensesList.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+            const monthlySpent = filteredExpenses.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+            const totalBudget = categoryBudgets.limit || 50000;
+            const remainingBalance = totalBudget - monthlySpent;
+
+            // Update Header / Cards Displays
+            document.getElementById('totalSpentDisplay').innerText = `Rs. ${totalSpent.toLocaleString()}`;
+            document.getElementById('monthlySpentDisplay').innerText = `Rs. ${monthlySpent.toLocaleString()}`;
+            document.getElementById('totalBalanceDisplay').innerText = `Rs. ${remainingBalance.toLocaleString()}`;
+
+            if (remainingBalance < 0) {
+                document.getElementById('totalBalanceDisplay').className = "text-base font-bold text-rose-400";
+            } else {
+                document.getElementById('totalBalanceDisplay').className = "text-base font-bold text-emerald-400";
+            }
+
+            // Render Category Summary Cards
+            renderCategorySummaryCards(filteredExpenses);
+
+            // Render Transactions List
+            renderTransactionsList(selectedCategoryFilter === 'All' ? filteredExpenses : filteredExpenses.filter(e => e.category === selectedCategoryFilter));
+        };
+
+        function renderCategorySummaryCards(currentExpenses) {
+            const grid = document.getElementById('categoryCardsGrid');
+            grid.innerHTML = '';
+
+            // Calculate category breakdown
+            const categorySums = {};
+            CATEGORIES.forEach(c => categorySums[c.name] = 0);
+
+            currentExpenses.forEach(exp => {
+                if (categorySums[exp.category] !== undefined) {
+                    categorySums[exp.category] += parseFloat(exp.price) || 0;
+                } else {
+                    categorySums['Others'] = (categorySums['Others'] || 0) + (parseFloat(exp.price) || 0);
+                }
+            });
+
+            // Dynamic card construction
+            CATEGORIES.forEach(cat => {
+                const amount = categorySums[cat.name] || 0;
+                const isActive = selectedCategoryFilter === cat.name;
+
+                const card = document.createElement('div');
+                card.onclick = () => {
+                    selectedCategoryFilter = selectedCategoryFilter === cat.name ? 'All' : cat.name;
+                    renderApp();
+                };
+
+                card.className = `p-3 rounded-xl border transition cursor-pointer flex flex-col justify-between ${cat.color} ${isActive ? 'ring-2 ring-brand-500 shadow-md' : 'opacity-90 hover:opacity-100'}`;
+                
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-xs font-bold truncate max-w-[90px]">${cat.name}</span>
+                        <i class="fa-solid ${cat.icon} text-sm"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm font-extrabold">Rs. ${amount.toLocaleString()}</div>
+                        <div class="text-[9px] opacity-75 mt-0.5">${amount > 0 ? 'Spent so far' : 'No expense'}</div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function renderTransactionsList(items) {
+            const listEl = document.getElementById('expensesList');
+            document.getElementById('expenseCountBadge').innerText = `${items.length} items`;
+            listEl.innerHTML = '';
+
+            if (items.length === 0) {
+                listEl.innerHTML = `
+                    <div class="text-center py-8 bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
+                        <i class="fa-solid fa-receipt text-slate-300 text-3xl mb-2"></i>
+                        <p class="text-xs font-semibold text-slate-500">No expenses found</p>
+                        <p class="text-[10px] text-slate-400 mt-0.5">Click 'Add Expense' to create a record.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            items.forEach(item => {
+                const catObj = CATEGORIES.find(c => c.name === item.category) || { icon: 'fa-box', color: 'bg-slate-100 text-slate-600' };
+                const isCash = item.paymentMethod === 'Cash';
+
+                const card = document.createElement('div');
+                card.className = "bg-white border border-slate-100 p-3 rounded-xl shadow-sm flex items-center justify-between hover:border-slate-200 transition";
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${catObj.color}">
+                            <i class="fa-solid ${catObj.icon} text-sm"></i>
+                        </div>
+                        <div class="truncate">
+                            <h4 class="text-xs font-bold text-slate-800 truncate">${escapeHtml(item.name)}</h4>
+                            <div class="flex items-center gap-2 mt-0.5 text-[10px] text-slate-400">
+                                <span><i class="fa-regular fa-calendar text-[9px]"></i> ${item.date || 'N/A'}</span>
+                                <span class="px-1.5 py-0.2 rounded ${isCash ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'} font-medium">
+                                    ${item.paymentMethod || 'Cash'}
+                                </span>
+                            </div>
+                            ${item.note ? `<p class="text-[10px] text-slate-500 italic truncate mt-0.5">${escapeHtml(item.note)}</p>` : ''}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <span class="text-xs font-bold text-rose-600">-Rs. ${parseFloat(item.price).toLocaleString()}</span>
+                        <button onclick="deleteExpense('${item.id}')" class="text-slate-300 hover:text-rose-500 p-1 transition" title="Delete">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        // ADD NEW EXPENSE HANDLER
+        window.handleSaveExpense = async function(e) {
+            e.preventDefault();
+            const submitBtn = document.getElementById('saveBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Saving...`;
+
+            try {
+                const name = document.getElementById('itemName').value.trim();
+                const price = parseFloat(document.getElementById('itemPrice').value);
+                const category = document.getElementById('itemCategory').value;
+                const date = document.getElementById('itemDate').value;
+                const paymentMethod = document.getElementById('itemPaymentMethod').value;
+                const note = document.getElementById('itemNote').value.trim();
+
+                const userId = auth.currentUser ? auth.currentUser.uid : 'guest-user';
+                
+                // Firestore save
+                const userExpensesRef = collection(db, 'artifacts', appId, 'users', userId, 'expenses');
+                await addDoc(userExpensesRef, {
+                    name,
+                    price,
+                    category,
+                    date,
+                    paymentMethod,
+                    note,
+                    createdAt: new Date().toISOString()
+                });
+
+                showToast("Expense added successfully!");
+                closeExpenseModal();
+                document.getElementById('addExpenseForm').reset();
+                document.getElementById('itemDate').value = new Date().toISOString().split('T')[0];
+            } catch (err) {
+                console.error("Save Error:", err);
+                showToast("Failed to save expense", true);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<i class="fa-solid fa-check"></i> Save Record`;
+            }
+        };
+
+        // DELETE EXPENSE
+        window.deleteExpense = async function(id) {
+            if (!confirm("Are you sure you want to delete this record?")) return;
+
+            try {
+                const userId = auth.currentUser ? auth.currentUser.uid : 'guest-user';
+                const docRef = doc(db, 'artifacts', appId, 'users', userId, 'expenses', id);
+                await deleteDoc(docRef);
+                showToast("Expense removed");
+            } catch (err) {
+                console.error("Delete Error:", err);
+                showToast("Could not delete item", true);
+            }
+        };
+
+        // AUTHENTICATION LOGIC
+        window.handleAuthSubmit = async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+            const alertBox = document.getElementById('authAlert');
+            alertBox.classList.add('hidden');
+
+            try {
+                if (isAuthModeLogin) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showToast("Signed in successfully!");
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    showToast("Account created successfully!");
+                }
+                closeAuthModal();
+            } catch (err) {
+                alertBox.innerText = err.message.replace("Firebase: ", "");
+                alertBox.classList.remove('hidden');
+            }
+        };
+
+        function updateAuthUI() {
+            const badge = document.getElementById('userEmailBadge');
+            const authBtnText = document.getElementById('authBtnText');
+
+            if (currentUser && !currentUser.isAnonymous) {
+                badge.innerText = currentUser.email;
+                authBtnText.innerText = "Logout";
+                document.getElementById('authBtn').onclick = () => {
+                    signOut(auth);
+                    showToast("Logged out");
+                };
+            } else {
+                badge.innerText = "Guest Mode (Local)";
+                authBtnText.innerText = "Login";
+                document.getElementById('authBtn').onclick = () => openAuthModal();
+            }
+        }
+
+        window.toggleAuthMode = function() {
+            isAuthModeLogin = !isAuthModeLogin;
+            document.getElementById('authTitle').innerText = isAuthModeLogin ? "Login to Sync Firebase" : "Register New Account";
+            document.getElementById('authSubmitBtn').innerText = isAuthModeLogin ? "Sign In" : "Register";
+            document.getElementById('authToggleText').innerText = isAuthModeLogin ? "Don't have an account?" : "Already registered?";
+            document.getElementById('authToggleBtn').innerText = isAuthModeLogin ? "Register" : "Sign In";
+        };
+
+        // MODAL CONTROLS
+        window.openAddExpenseModal = function() {
+            document.getElementById('expenseModal').classList.remove('hidden');
+        };
+        window.closeExpenseModal = function() {
+            document.getElementById('expenseModal').classList.add('hidden');
+        };
+
+        window.openBudgetModal = function() {
+            document.getElementById('budgetInput').value = categoryBudgets.limit || 50000;
+            document.getElementById('budgetModal').classList.remove('hidden');
+        };
+        window.closeBudgetModal = function() {
+            document.getElementById('budgetModal').classList.add('hidden');
+        };
+        window.saveBudgetLimit = function() {
+            const val = parseFloat(document.getElementById('budgetInput').value);
+            if (!isNaN(val) && val > 0) {
+                categoryBudgets.limit = val;
+                renderApp();
+                closeBudgetModal();
+                showToast("Budget updated!");
+            }
+        };
+
+        window.openAuthModal = function() {
+            document.getElementById('authModal').classList.remove('hidden');
+        };
+        window.closeAuthModal = function() {
+            document.getElementById('authModal').classList.add('hidden');
+        };
+
+        // HELPERS
+        function populateMonthOptions() {
+            const select = document.getElementById('monthFilter');
+            select.innerHTML = '';
+
+            const today = new Date();
+            const currYear = today.getFullYear();
+            const currMonth = today.getMonth();
+
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+            // Option: All Months
+            const optAll = document.createElement('option');
+            optAll.value = "ALL";
+            optAll.innerText = "All Months";
+            select.appendChild(optAll);
+
+            // Last 6 Months
+            for (let i = 0; i < 6; i++) {
+                const d = new Date(currYear, currMonth - i, 1);
+                const mStr = String(d.getMonth() + 1).padStart(2, '0');
+                const val = `${d.getFullYear()}-${mStr}`;
+                const label = `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.innerText = label;
+                if (i === 0) opt.selected = true;
+                select.appendChild(opt);
+            }
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = msg;
+            toastIcon.className = isError ? "fa-solid fa-circle-exclamation text-rose-400" : "fa-solid fa-circle-check text-emerald-400";
+            
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+    </script>
+</body>
+</html>
